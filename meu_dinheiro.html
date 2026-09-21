@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>Meu Dinheiro</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#111827;--muted:#6b7280;--green:#16a34a;--red:#dc2626;--blue:#2563eb;--line:#e5e7eb}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--text)}
+.app{max-width:760px;margin:auto;padding:18px 16px 36px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+h1{font-size:25px;margin:0}.month{display:flex;align-items:center;justify-content:center;gap:18px;margin:10px 0 18px}.month button{border:0;background:#e5e7eb;border-radius:12px;font-size:22px;width:42px;height:42px}.month strong{font-size:18px;text-transform:capitalize;min-width:150px;text-align:center}
+.balance{background:#111827;color:#fff;border-radius:22px;padding:22px;margin-bottom:14px}.balance small{color:#cbd5e1}.balance .value{font-size:34px;font-weight:800;margin:5px 0 14px}.mini{display:flex;justify-content:space-between}.mini span{display:block;color:#cbd5e1;font-size:12px}.mini b{font-size:17px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.actions button{border:0;border-radius:18px;padding:22px 10px;font-size:18px;font-weight:800;color:#fff}.gain{background:var(--green)}.spend{background:var(--red)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin-top:14px}.card h2{font-size:17px;margin:0 0 14px}.chart{display:flex;align-items:center;gap:20px}.donut{width:150px;height:150px;border-radius:50%;background:conic-gradient(#2563eb 0 30%,#16a34a 30% 50%,#f59e0b 50% 72%,#9333ea 72% 86%,#ef4444 86% 100%);position:relative;flex:none}.donut:after{content:"";position:absolute;inset:35px;background:#fff;border-radius:50%}.legend{flex:1}.legend div{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:14px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}.desc{font-weight:650}.sub{font-size:12px;color:var(--muted);margin-top:3px}.in{color:var(--green);font-weight:800}.out{color:var(--red);font-weight:800}
+.empty{text-align:center;color:var(--muted);padding:20px}
+dialog{border:0;border-radius:22px;padding:0;width:min(92%,420px);box-shadow:0 20px 60px #0003}dialog::backdrop{background:#0006}.modal{padding:20px}.modal h2{margin-top:0}.type{display:flex;gap:8px;margin-bottom:14px}.type button{flex:1;padding:12px;border-radius:12px;border:1px solid var(--line);background:#fff;font-weight:700}.type .selected{background:#111827;color:#fff}.field{margin:12px 0}.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}.field input,.field select{width:100%;padding:13px;border:1px solid var(--line);border-radius:12px;font-size:16px}.modal-actions{display:flex;gap:10px;margin-top:18px}.modal-actions button{flex:1;padding:13px;border:0;border-radius:12px;font-weight:800}.save{background:#111827;color:#fff}.cancel{background:#e5e7eb}
+.footer{font-size:12px;color:var(--muted);text-align:center;margin-top:20px}
+@media(max-width:520px){.chart{display:block}.donut{margin:0 auto 18px}.legend{width:100%}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><h1>Meu Dinheiro</h1></header>
+
+<div class="month">
+<button id="prev">‹</button><strong id="monthLabel"></strong><button id="next">›</button>
+</div>
+
+<section class="balance">
+<small>Saldo do mês</small>
+<div class="value" id="balance">R$ 0,00</div>
+<div class="mini">
+<div><span>Ganhei</span><b id="income">R$ 0,00</b></div>
+<div style="text-align:right"><span>Gastei</span><b id="expense">R$ 0,00</b></div>
+</div>
+</section>
+
+<div class="actions">
+<button class="gain" id="gainBtn">＋ GANHEI</button>
+<button class="spend" id="spendBtn">− GASTEI</button>
+</div>
+
+<section class="card"><h2>Gastos por categoria</h2><div class="chart"><div class="donut" id="donut"></div><div class="legend" id="legend"></div></div></section>
+
+<section class="card"><h2>Entradas x saídas</h2><div id="flowChart" style="height:190px;display:flex;align-items:flex-end;justify-content:center;gap:48px;padding:12px 10px 4px"></div><div id="flowLegend" style="display:flex;justify-content:center;gap:28px;font-size:13px;color:#6b7280;margin-top:8px"></div></section>
+
+<section class="card"><h2>Movimentações</h2><div id="list"></div></section>
+<div class="footer">Seus dados ficam salvos neste navegador.</div>
+</div>
+
+<dialog id="dialog">
+<div class="modal">
+<h2 id="modalTitle">Registrar</h2>
+<div class="type"><button id="incomeType">GANHEI</button><button id="expenseType">GASTEI</button></div>
+<div class="field"><label>Valor</label><input id="amount" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0,00"></div>
+<div class="field"><label>Descrição</label><input id="description" maxlength="60" placeholder="Ex.: almoço, salário, Pix..."></div>
+<div class="field"><label>Categoria</label>
+<select id="category"></select></div>
+<div class="field"><label>Data</label><input id="date" type="date"></div>
+<div class="modal-actions"><button class="cancel" id="cancel">Cancelar</button><button class="save" id="save">Salvar</button></div>
+</div>
+</dialog>
+
+<script>
+const KEY='meu_dinheiro_v1';
+let data=JSON.parse(localStorage.getItem(KEY)||'[]');
+let current=new Date(new Date().getFullYear(),new Date().getMonth(),1);
+let type='expense';
+
+const cats=['Alimentação','Moradia','Contas','Transporte','Faculdade','Compras','Lazer','Saúde','Dívidas','Outros'];
+const incomeCats=['Salário','Extra','Pix recebido','Venda','Reembolso','Outros'];
+
+const brl=n=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n);
+const monthKey=d=>d.slice(0,7);
+function fmtDate(d){return new Intl.DateTimeFormat('pt-BR').format(new Date(d+'T12:00:00'))}
+function saveData(){localStorage.setItem(KEY,JSON.stringify(data))}
+function render(){
+ const key=current.getFullYear()+'-'+String(current.getMonth()+1).padStart(2,'0');
+ document.getElementById('monthLabel').textContent=new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(current);
+ const rows=data.filter(x=>monthKey(x.date)===key).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+ const inc=rows.filter(x=>x.type==='income').reduce((s,x)=>s+x.amount,0);
+ const exp=rows.filter(x=>x.type==='expense').reduce((s,x)=>s+x.amount,0);
+ document.getElementById('income').textContent=brl(inc);
+ document.getElementById('expense').textContent=brl(exp);
+ document.getElementById('balance').textContent=brl(inc-exp);
+
+ const totals={}; rows.filter(x=>x.type==='expense').forEach(x=>totals[x.category]=(totals[x.category]||0)+x.amount);
+ const sorted=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+ const total=exp||1;
+ let acc=0, stops=[];
+ const palette=['#2563eb','#16a34a','#f59e0b','#9333ea','#ef4444','#0891b2','#ea580c','#65a30d','#db2777','#64748b'];
+ sorted.forEach(([c,v],i)=>{stops.push(`${palette[i%palette.length]} ${acc/total*100}% ${(acc+v)/total*100}%`);acc+=v});
+ document.getElementById('donut').style.background=exp?`conic-gradient(${stops.join(',')})`:'#e5e7eb';
+ document.getElementById('legend').innerHTML=sorted.length?sorted.map(([c,v],i)=>`<div><span><i class="dot" style="background:${palette[i%palette.length]}"></i>${c}</span><b>${brl(v)}</b></div>`).join(''):'<div class="empty">Ainda não há gastos neste mês.</div>';
+
+ const maxFlow=Math.max(inc,exp,1);
+ const flow=(value,label,cls,color)=>`<div style="height:150px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;min-width:95px"><div style="font-weight:800;margin-bottom:7px">${brl(value)}</div><div class="${cls}" style="width:72px;height:${Math.max(8,value/maxFlow*112)}px;background:${color};border-radius:10px 10px 4px 4px"></div></div>`;
+ document.getElementById('flowChart').innerHTML=flow(inc,'Ganhei','in','#16a34a')+flow(exp,'Gastei','out','#dc2626');
+ document.getElementById('flowLegend').innerHTML='<span>🟢 Ganhei</span><span>🔴 Gastei</span>';
+
+ document.getElementById('list').innerHTML=rows.length?rows.map(x=>`<div class="row"><div><div class="desc">${escapeHtml(x.description||x.category)}</div><div class="sub">${fmtDate(x.date)} · ${escapeHtml(x.category)}</div></div><div class="${x.type==='income'?'in':'out'}">${x.type==='income'?'+':'−'} ${brl(x.amount)}</div></div>`).join(''):'<div class="empty">Nenhuma movimentação neste mês.</div>';
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function setType(t){
+ type=t; document.getElementById('incomeType').classList.toggle('selected',t==='income'); document.getElementById('expenseType').classList.toggle('selected',t==='expense');
+ document.getElementById('category').innerHTML=(t==='income'?incomeCats:cats).map(x=>`<option>${x}</option>`).join('');
+ document.getElementById('modalTitle').textContent=t==='income'?'Registrar entrada':'Registrar gasto';
+}
+function openModal(t){
+ setType(t);document.getElementById('amount').value='';document.getElementById('description').value='';
+ document.getElementById('date').value=new Date().toISOString().slice(0,10);document.getElementById('dialog').showModal();
+ setTimeout(()=>document.getElementById('amount').focus(),100);
+}
+document.getElementById('gainBtn').onclick=()=>openModal('income');
+document.getElementById('spendBtn').onclick=()=>openModal('expense');
+document.getElementById('incomeType').onclick=()=>setType('income');
+document.getElementById('expenseType').onclick=()=>setType('expense');
+document.getElementById('cancel').onclick=()=>document.getElementById('dialog').close();
+document.getElementById('save').onclick=()=>{
+ const amount=parseFloat(document.getElementById('amount').value.replace(',','.'));
+ if(!amount||amount<=0){alert('Digite um valor válido.');return}
+ data.push({id:Date.now(),type,amount,description:document.getElementById('description').value.trim(),category:document.getElementById('category').value,date:document.getElementById('date').value});
+ saveData();document.getElementById('dialog').close();render();
+};
+document.getElementById('prev').onclick=()=>{current.setMonth(current.getMonth()-1);render()};
+document.getElementById('next').onclick=()=>{current.setMonth(current.getMonth()+1);render()};
+render();
+</script>
+</body>
+</html>
